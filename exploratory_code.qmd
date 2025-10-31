@@ -1,0 +1,194 @@
+---
+title: "exploratory code"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Exploratory Code
+
+```{r}
+# load packages
+library(tidyverse)
+library(here)
+library(stringr)
+```
+
+```{r}
+# load data
+toplayer_percent <- read_csv(here("data","KATMKEFJWPWS_2006-2024_randomPointContactCover_topLayerPercentCover.csv"))
+total_percent <- read_csv(here("data", "KATMKEFJWPWS_2006-2024_randomPointContactCover_percentCover.csv"))
+invert_count <- read_csv(here("data", "KATMKEFJWPWS_2006-2024_Nucella_Katharina_Lirabuccinum_Count.csv"))
+```
+
+```{r}
+# add region column to all data
+total_percent <- total_percent %>% 
+  mutate(region = str_sub(SiteID, 1, 3))
+toplayer_percent <- toplayer_percent %>% 
+  mutate(region = str_sub(SiteID, 1, 3))
+invert_count <- invert_count %>% 
+  mutate(region = str_sub(SiteID, 1, 3))
+```
+
+Possible questions:
+
+1.  "how does algae percent cover change over time in the Southwest Alaska area (there's 3 locations with long names!)". Predictor(s) would be time, and maybe site? Response is algae percent cover.
+
+```{r}
+# check how many sites there are
+unique(total_percent$SiteName)
+unique(total_percent$Species)
+```
+
+
+```{r}
+# summarise mean total percent grouped by date, site, elevation, and quadrat
+sum_percent <- total_percent %>% 
+  group_by(SampleDate, SiteName, Elevation_Position, Quadrat_Num) %>% 
+  summarise(sum = sum(Percent_Cover)) %>% 
+  summarise(total_percent = mean(sum))
+
+sum_top_percent <- toplayer_percent %>% 
+  group_by(SampleDate, SiteName, Elevation_Position, Quadrat_Num) %>% 
+  summarise(sum = sum(PercentCover)) %>% 
+  summarise(total_percent = mean(sum))
+```
+
+```{r}
+# algae cover x date colored by site 
+# ggplot(sum_percent, aes(x = SampleDate, y = total_percent)) +
+#   geom_point(aes(color = SiteName)) +
+#   geom_line(aes(color = SiteName)) +
+#   facet_wrap(~Elevation_Position)
+# 
+# ggplot(sum_top_percent, aes(x = SampleDate, y = total_percent)) +
+#   geom_point(aes(color = SiteName)) +
+#   geom_line(aes(color = SiteName)) +
+#   facet_wrap(~Elevation_Position)
+
+# These look crazy, so lets gather by region instead to just look at 3 instead of each site
+```
+
+```{r}
+# summarise algae cover by date, region, elevation, and quadrat. then mean
+sum_percent <- total_percent %>% 
+  group_by(SampleDate, region, Elevation_Position, Quadrat_Num) %>% 
+  summarise(sum = sum(Percent_Cover)) %>% 
+  summarise(total_percent = mean(sum))
+
+sum_top_percent <- toplayer_percent %>% 
+  group_by(SampleDate, region, Elevation_Position, Quadrat_Num) %>% 
+  summarise(sum = sum(PercentCover)) %>% 
+  summarise(total_percent = mean(sum))
+
+# total algae counted by date
+ggplot(sum_percent, aes(x = SampleDate, y = total_percent)) +
+  geom_point(aes(color = region)) +
+  geom_line(aes(color = region)) +
+  facet_wrap(~Elevation_Position)
+
+# top layer of algae by date
+ggplot(sum_top_percent, aes(x = SampleDate, y = total_percent)) +
+  geom_point(aes(color = region)) +
+  geom_line(aes(color = region)) +
+  facet_wrap(~Elevation_Position)
+
+# ggplot(toplayer_percent, aes(x = SampleDate, y = SpeciesCount)) +
+#   geom_line(aes(color = Lump_Name)) +
+#   theme(legend.position="none")
+```
+
+```{r}
+# summarise data by year instead of date
+sum_percent_year <- total_percent %>% 
+  group_by(Year, region, Elevation_Position, Quadrat_Num) %>% 
+  summarise(sum = sum(Percent_Cover)) %>% 
+  summarise(total_percent = mean(sum))
+
+sum_top_percent_year <- toplayer_percent %>% 
+  group_by(Year, region, Elevation_Position, Quadrat_Num) %>% 
+  summarise(sum = sum(PercentCover)) %>% 
+  summarise(total_percent = mean(sum))
+
+# algae cover x year scatter facet by elevation
+ggplot(sum_percent_year, aes(x = Year, y = total_percent)) +
+  geom_point(aes(color = region)) +
+  geom_line(aes(color = region)) +
+  facet_wrap(~Elevation_Position)
+
+# ggplot(sum_top_percent_year, aes(x = Year, y = total_percent)) +
+#   geom_point(aes(color = region)) +
+#   geom_line(aes(color = region)) +
+#   facet_wrap(~Elevation_Position)
+```
+
+2.  "Does algae cover influence the amount/diversity of invertebrates in the southwest Alaska area". Predictor would now be percent algae cover, response is invertebrate counts or invertebrate proportions if I want to look at all 4 species and their proportions in relation to each other.
+
+```{r}
+# sum invert counts by region, date, elevation
+sum_invert_count <- invert_count %>% 
+  group_by(SampleDate, region, Elevation_Position) %>% 
+  summarise(invert_count = sum(Density_individual2SqM))
+
+# join invert count and algae cover
+invert_algae_join <- left_join(sum_invert_count, sum_percent, by = c("SampleDate", "region", "Elevation_Position"))
+
+# invert count x algae percent scatter
+ggplot(invert_algae_join, aes(x = total_percent, y = invert_count))+
+  geom_point()
+# invert count x date bar
+ggplot(invert_algae_join, aes(x = SampleDate, y = invert_count)) +
+  geom_col(width = 100)
+
+# invert count x region boxplot
+ggplot(invert_algae_join, aes(x = region, y = invert_count)) +
+  geom_boxplot()
+
+# filter invert count for <1000, and plot boxplot
+invert_1000 <- invert_algae_join %>% 
+  filter(invert_count < 1000)
+ggplot(invert_1000, aes(x = Elevation_Position, y = invert_count)) +
+  geom_boxplot()
+
+```
+
+```{r}
+# remove 0s from invert count
+invert_count_no_zero <- invert_count %>% 
+  filter(Density_individual2SqM != 0)
+
+unique(invert_count_no_zero$SpeciesName) # 4 species were counted
+unique(total_percent$Species) # over 100 algae species
+```
+
+```{r}
+# calculate diversity
+algae_diversity <- total_percent %>% 
+  group_by(SampleDate, region, Elevation_Position, Quadrat_Num) %>% 
+  summarise(species_count = n()) %>% 
+  summarise(mean_species_count = round(mean(species_count)))
+
+algae_diversity_top <- toplayer_percent %>% 
+  group_by(SampleDate, region, Elevation_Position, Quadrat_Num) %>% 
+  summarise(species_count = n()) %>% 
+  summarise(mean_species_count = round(mean(species_count)))
+
+# plot algae diversity x date
+# ggplot(algae_diversity, aes(x = SampleDate, y = mean_species_count)) +
+#   geom_col(width = 100)
+```
+
+```{r}
+# join invert count and algae diversity
+invert_algae_div_join <- left_join(sum_invert_count, algae_diversity, by = c("SampleDate", "region", "Elevation_Position"))
+
+invert_algae_top_join <- left_join(sum_invert_count, algae_diversity_top, by = c("SampleDate", "region", "Elevation_Position"))
+
+# plot mean algae diversity x invert count scatter
+ggplot(invert_algae_div_join, aes(x = mean_species_count, y = invert_count)) +
+  geom_point(aes(color = Elevation_Position)) +
+  facet_wrap(~region)
+```
+
