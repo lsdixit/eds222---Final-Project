@@ -1,25 +1,58 @@
 ---
-title: "Algae_density"
+title: "Effect of Algae Density on Invertebrate Density"
+author: "Leela Dixit"
+date: 2025-12-04
 format: html
 editor_options: 
   chunk_output_type: console
 ---
 
-Background
+# Background
 
-Hypotheses
+![](intertidal.jpg)
 
-H0 = invertebrate count does not change with increasing algae.
-HA = invertebrate count does change with increasing algae.
+The rocky intertidal zone is a coastal ecosystem home to a large diversity of species, including thousands of algae and invertebrate species. There are distinct zones that separate the intertidal based on ecological and physical characteristics.
+
+| Intertidal Zone | Characteristics |
+|------------------------------------|------------------------------------|
+| high intertidal zone | flood during high tide but dry most of the time, only inhabited by hardy species |
+| mid intertidal zone | tide ebbs and flows twice a day, more rich species diversity |
+| low intertidal zone | Almost always underwater, often more species abundance |
+
+Species arrange themselves along these zones as they are fit to survive environmental conditions, have food availability, and can handle predation and competition. In this project, we will explore causal effects of food availability on the density of invertebrates in the mid and high intertidal zones.
+
+## Data Sources
+
+These data were collected as part of the Gulf Watch Alaska long-term monitoring program rocky intertidal study. Data was collected from 2006-2025 on counts/densities of invertebrates and estimates of algae percent cover to assess change in communities in rocky intertidal zones. Three regions in Alaska were sampled, with multiple sites per region. Regions are located at Prince William Sound, Alaska Peninsula, and Kenai Peninsula. Counts were taken for Nucella spp., Lirabuccinum dirum, Katharina tunicata, and Lottia spp..
+
+## Citations
+
+U.S. Geological Survey - Alaska Science Center, and National Park Service - Southwest Alaska Inventory and Monitoring Network, 2022, Rocky intertidal data from Prince William Sound, Katmai National Park and Preserve, and Kenai Fjords National Park (ver 4.0, December 2025): U.S. Geological Survey data release, https://doi.org/10.5066/F7513WCB.
+
+# Hypotheses
+
+In this project, we will be investigating how algae cover affects total invertebrate densities. Our hypothesis are:
+
+H0 = invertebrate count does not change with increasing algae cover.
+
+HA = invertebrate count does change with increasing algae cover.
+
+### Clean and wrangle data for analysis.
 
 ```{r}
+#| output: false
+
 # load packages
 library(tidyverse)
 library(here)
 library(stringr)
+library(MASS)
+library(kableExtra)
 ```
 
 ```{r}
+#| output: false
+
 # load data
 toplayer_percent <- read_csv(here("data","KATMKEFJWPWS_2006-2024_randomPointContactCover_topLayerPercentCover.csv"))
 total_percent <- read_csv(here("data", "KATMKEFJWPWS_2006-2024_randomPointContactCover_percentCover.csv"))
@@ -27,6 +60,8 @@ invert_count <- read_csv(here("data", "KATMKEFJWPWS_2006-2024_Nucella_Katharina_
 ```
 
 ```{r}
+#| message: false
+
 # add region column to all data
 total_percent <- total_percent %>% 
   mutate(region = str_sub(SiteID, 1, 3))
@@ -37,59 +72,178 @@ invert_count <- invert_count %>%
 ```
 
 ```{r}
+#| message: false
+#| warning: false
+
+# calculate averages to plot and run analysis
+
+# summarise invertebrate counts
 sum_invert_count <- invert_count %>% 
   group_by(SampleDate, region, Elevation_Position) %>% 
   summarise(invert_count = sum(Density_individual2SqM))
+# summarise algae cover
 sum_percent <- total_percent %>% 
   group_by(SampleDate, region, Elevation_Position, Quadrat_Num) %>% 
   summarise(sum = sum(Percent_Cover)) %>% 
   summarise(total_percent = mean(sum))
-
+# join invertebrate and algae count data 
 invert_algae_join <- left_join(sum_invert_count, sum_percent, by = c("SampleDate", "region", "Elevation_Position"))
-
-ggplot(invert_algae_join, aes(x = total_percent, y = invert_count))+
-  geom_point()
-
-ggplot(invert_algae_join, aes(x = invert_count)) +
-  geom_bar()
+rm(sum_invert_count, sum_percent, total_percent, toplayer_percent, invert_count)
 ```
 
-DAG
+We can check if/how zero inflated our data are.
 
-Data and Model Simulation
-y ~ negbinom (mu, theta)
-log(mu) = beta0 + beta1 * predictor
+```{r}
+# check how many rows are 0
+sum(invert_algae_join$invert_count == 0) / nrow(invert_algae_join)
+```
 
-mu = r(1-p) / p
+The 0s in our data are about 12% of the total data, so we will leave the 0s in our data as is.
+
+We can visualize how our predictor and response look, as well as how our response is distributed.
+
+```{r}
+#| warning: false
+
+# scatter plot for algae cover and invert count
+ggplot(invert_algae_join, aes(x = total_percent, y = invert_count))+
+  geom_point(aes(color = region), alpha = 0.5) +
+  theme_classic() +
+  labs(title = "Total Percentage of Algae x Total Invertebrate Count",
+       x = "% Algae",
+       y = "Invertebrate Count")
+# bar plot with total invert counts
+ggplot(invert_algae_join, aes(x = invert_count)) +
+  geom_bar(width = 50) +
+  ylim(0, 20) +
+  theme_classic() +
+  labs(title = "Frequency of Invertebrate Count",
+       x = "Invertebrate Count",
+       y = "Frequency")
+```
+
+# DAG
+
+![](DAG.png)
+
+In this DAG, we have year influencing date, which influences invertebrate counts. Elevation along the intertidal affects invertebrate counts, but nothing else. Region will affect which site we are looking at, which in turn affects how many invertebrates are counted. For this model, we will remove site as a predictor and instead include region to capture the affect. We will use date instead of year, however, as our data are sampled from only June and July, and date will give encompass the granular changes that occur in the intertidal between tidal days.
+
+
+# Data and Model Simulation
+
+We will be using a negative binomial regression analysis. Our response data (invertebrate counts) are nonnegative integers following a negative binomial distribution.
+
+The statistical notation for a negative binomial is as follows:
+
+$$
+\begin{align}
+\text{CountOutcome} &\sim NegBinom(\mu, \theta) \\
+log(\mu) &= \beta_0 + \beta_1 \text{Predictor}
+\end{align}
+$$
+
+`θ` represents the overdispersion parameter.
+
+`μ` relates to variables `r` (number of successes) and `p` (probability of success) with:
+
+$$
+\begin{align}
+\mu &= r(1-p)/p
+\end{align}
+$$ To better understand our model, we can simulate coefficients and parameters, and run a model to retrieve our coefficients if done correctly.
 
 ```{r}
 set.seed(42)
 # set coefficients and parameters
-# mu <- 1
-# theta <- 3
 beta0 <- -2
 beta1 <- 0.7
 theta <- 0.6
-# probability <- 0.5
 
-x <- rnorm(1000, mean = 10, sd = 0.5)
+# generate predictor
+x <- rnorm(10000, mean = 10, sd = 0.5)
 
+# calculate mean using statistical model notation
 log_mu <- beta0 + beta1 * x
 mu <- exp(log_mu)
 
-y <- rnbinom(1000, mu = mu, size = theta)
+# generate response 
+y <- rnbinom(10000, mu = mu, size = theta)
 
+# simulate negative binomial model
 simulate_mod <- glm.nb(y ~ x,
                        data = tibble(x, y))
-summary(simulate_mod)
+# check if we get our original coefficients back
+beta0_sim <- coef(simulate_mod)[1]
+beta1_sim <- coef(simulate_mod)[2]
+theta_sim <- simulate_mod$theta
 ```
 
+| Coefficient | Input Coefficients | Simulated Coefficients |
+|-------------|--------------------|------------------------|
+| beta0       | `r beta0`          | `r beta0_sim`          |
+| beta1       | `r beta1`          | `r beta1_sim`          |
+| theta       | `r theta`          | `r theta_sim`          |
 
-Negative Binomial Model
+# Negative Binomial Model
+
+In our model, we are including variables of total algae percent (\>100%), date, region, and elevation. We decided to use total algae percent instead of percent cover to capture the multiple layers of algae growth on intertidal habitat. As stated above, we decided to use date as our data were sampled only from June and July, and we can better capture the fluctuation and randomness of invertebrate observations between sampling days. We chose regions instead of sites as it will explain the variation of each site within it.
 
 ```{r}
-glm.nb(invert_count ~ total_percent + SampleDate + region + Elevation_Position, data = invert_algae_join, link = log)
+#| message: false
+
+invert_model <- glm.nb(invert_count ~ 
+                         total_percent + 
+                         SampleDate + 
+                         region + 
+                         Elevation_Position, 
+                       data = invert_algae_join, link = log)
+summary(invert_model)$coefficients %>% kable()
+
+confint(invert_model) %>% kable()
 ```
 
+```{r}
+pred_grid <- expand_grid(
+  total_percent = seq(min(invert_algae_join$total_percent),
+                      max(invert_algae_join$total_percent),
+                      length.out = length(invert_algae_join$total_percent))) %>%
+  mutate(SampleDate = as.Date("2025-06-07"),
+         region = c("KEP"),
+         Elevation_Position = "Mid (0.5 m MLLW)")
 
-Conclusion
+se <- predict(object = invert_model, 
+              newdata = pred_grid, 
+              type = "link",
+              se.fit = TRUE)
+
+
+pred_grid <- pred_grid %>%
+  mutate(
+    log_mu = se$fit,
+    log_mu_se = se$se.fit,
+    log_mu_lwr = log_mu - 1.96 * log_mu_se,
+    log_mu_upr = log_mu + 1.96 * log_mu_se,
+    mu = exp(log_mu),
+    mu_lwr = exp(log_mu_lwr),
+    mu_upr = exp(log_mu_upr)
+  )
+
+predict = predict(object = invert_model,
+                           newdata = pred_grid,
+                           type = "response")
+
+ggplot(pred_grid, aes(x = total_percent, y = mu)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = mu_lwr,
+                  ymax = mu_upr), alpha = 0.2, fill = "cornflowerblue") +
+  labs(x = "% algae",
+       y = "Predicted Invertebrate Count")
+```
+
+# Conclusion
+
+Based on our model, we did not see a significant affect of algae coverage or elevation on invertebrate density. We did, however, see a significant affect of sample date and region on invertebrate density. We predict what's driving any patterns in invertebrate density is not algae coverage, but the day and region. This could be due to a few reasons.
+
+1.  Samples were taken during only June and July, and the algae that was present at these sites during these months may not be what invertebrate species counted utilized for food. This study did not assess species of algae, but that could influence results.
+2.  All species collected are snails, which are quite motile in the intertidal. There is some level of randomness to what snails are present in a quadrat at the time of counting.
+3.  The 3 regions included in this study range the entirety of the southern peninsula of Alaska, and likely both algae species and invertebrate counts vary greatly over that large of an area.

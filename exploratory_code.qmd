@@ -42,7 +42,6 @@ unique(total_percent$SiteName)
 unique(total_percent$Species)
 ```
 
-
 ```{r}
 # summarise mean total percent grouped by date, site, elevation, and quadrat
 sum_percent <- total_percent %>% 
@@ -192,3 +191,19 @@ ggplot(invert_algae_div_join, aes(x = mean_species_count, y = invert_count)) +
   facet_wrap(~region)
 ```
 
+```{r}
+pred_grid <- expand_grid(
+  total_percent = 100:350) %>% 
+  mutate(SampleDate = as.Date("2025-06-07"),
+         region = "KEP",
+         Elevation_Position = "Mid (0.5 m MLLW)")
+
+
+pred_grid <- pred_grid %>% 
+  mutate(predict = predict(object = invert_model,
+                           newdata = pred_grid,
+                           type = "response"))
+
+ggplot(pred_grid, aes(x = total_percent, y = predict)) +
+  geom_line()
+```
