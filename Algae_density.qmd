@@ -111,7 +111,9 @@ ggplot(invert_algae_join, aes(x = total_percent, y = invert_count))+
   theme_classic() +
   labs(title = "Total Percentage of Algae x Total Invertebrate Count",
        x = "% Algae",
-       y = "Invertebrate Count")
+       y = "Invertebrate Count") +
+  scale_color_manual(values=c("#1B9E77", "#D95F02", "#7570B3"))
+
 # bar plot with total invert counts
 ggplot(invert_algae_join, aes(x = invert_count)) +
   geom_bar(width = 50) +
@@ -202,6 +204,7 @@ summary(invert_model)$coefficients %>% kable()
 confint(invert_model) %>% kable()
 ```
 
+Use predictions to estimate a 95% CI for `μ`
 ```{r}
 pred_grid <- expand_grid(
   total_percent = seq(min(invert_algae_join$total_percent),
@@ -216,7 +219,6 @@ se <- predict(object = invert_model,
               type = "link",
               se.fit = TRUE)
 
-
 pred_grid <- pred_grid %>%
   mutate(
     log_mu = se$fit,
@@ -228,16 +230,13 @@ pred_grid <- pred_grid %>%
     mu_upr = exp(log_mu_upr)
   )
 
-predict = predict(object = invert_model,
-                           newdata = pred_grid,
-                           type = "response")
-
 ggplot(pred_grid, aes(x = total_percent, y = mu)) +
   geom_line() +
   geom_ribbon(aes(ymin = mu_lwr,
                   ymax = mu_upr), alpha = 0.2, fill = "cornflowerblue") +
   labs(x = "% algae",
-       y = "Predicted Invertebrate Count")
+       y = "Predicted Invertebrate Count") +
+  theme_classic()
 ```
 
 # Conclusion
