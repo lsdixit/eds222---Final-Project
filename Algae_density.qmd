@@ -33,9 +33,9 @@ U.S. Geological Survey - Alaska Science Center, and National Park Service - Sout
 
 In this project, we will be investigating how algae cover affects total invertebrate densities. Our hypothesis are:
 
-H0 = invertebrate count does not change with increasing algae cover.
+H~0~ = 0 invertebrate count does not change with increasing algae cover.
 
-HA = invertebrate count does change with increasing algae cover.
+H~A~ != 0 invertebrate count does change with increasing algae cover.
 
 ### Clean and wrangle data for analysis.
 
@@ -130,7 +130,6 @@ ggplot(invert_algae_join, aes(x = invert_count)) +
 
 In this DAG, we have year influencing date, which influences invertebrate counts. Elevation along the intertidal affects invertebrate counts, but nothing else. Region will affect which site we are looking at, which in turn affects how many invertebrates are counted. For this model, we will remove site as a predictor and instead include region to capture the affect. We will use date instead of year, however, as our data are sampled from only June and July, and date will give encompass the granular changes that occur in the intertidal between tidal days.
 
-
 # Data and Model Simulation
 
 We will be using a negative binomial regression analysis. Our response data (invertebrate counts) are nonnegative integers following a negative binomial distribution.
@@ -205,6 +204,7 @@ confint(invert_model) %>% kable()
 ```
 
 Use predictions to estimate a 95% CI for `μ`
+
 ```{r}
 pred_grid <- expand_grid(
   total_percent = seq(min(invert_algae_join$total_percent),
@@ -241,7 +241,7 @@ ggplot(pred_grid, aes(x = total_percent, y = mu)) +
 
 # Conclusion
 
-Based on our model, we did not see a significant affect of algae coverage or elevation on invertebrate density. We did, however, see a significant affect of sample date and region on invertebrate density. We predict what's driving any patterns in invertebrate density is not algae coverage, but the day and region. This could be due to a few reasons.
+Based on our model, we did not see a significant affect of algae coverage or elevation on invertebrate density. While we do see a negative trend with increasing algae coverage (H~A),~ our algae coverage coefficient is not significantly different than 0 and with a 95% confidence interval of -0.005 - 0.002, indicating there is a chance the pattern we see in our data could be due to random chance. We did, however, see a significant affect of sample date and region on invertebrate density, both with coefficients significantly different than 0. We can predict what's driving any patterns in invertebrate density is likely not algae coverage, but the day and region. This could be due to a few reasons.
 
 1.  Samples were taken during only June and July, and the algae that was present at these sites during these months may not be what invertebrate species counted utilized for food. This study did not assess species of algae, but that could influence results.
 2.  All species collected are snails, which are quite motile in the intertidal. There is some level of randomness to what snails are present in a quadrat at the time of counting.
