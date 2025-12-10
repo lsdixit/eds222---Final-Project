@@ -19,7 +19,7 @@ The rocky intertidal zone is a coastal ecosystem home to a large diversity of sp
 | mid intertidal zone | tide ebbs and flows twice a day, more rich species diversity |
 | low intertidal zone | Almost always underwater, often more species abundance |
 
-Species arrange themselves along these zones as they are fit to survive environmental conditions, have food availability, and can handle predation and competition. In this project, we will explore causal effects of food availability on the density of invertebrates in the mid and high intertidal zones.
+Species arrange themselves along these zones as they are fit to survive environmental conditions, have food availability, and can handle predation and competition. In this project, we will explore the effects of food availability on the density of invertebrates in the mid and high intertidal zones.
 
 ## Data Sources
 
@@ -40,6 +40,7 @@ H~A~ != 0 invertebrate count does change with increasing algae cover.
 ### Clean and wrangle data for analysis.
 
 ```{r}
+#| code-fold: true
 #| output: false
 
 # load packages
@@ -48,30 +49,50 @@ library(here)
 library(stringr)
 library(MASS)
 library(kableExtra)
+library(pacman)
+library(patchwork)
+pacman::p_load("dagitty")
 ```
 
 ```{r}
+#| code-fold: true
 #| output: false
 
 # load data
-toplayer_percent <- read_csv(here("data","KATMKEFJWPWS_2006-2024_randomPointContactCover_topLayerPercentCover.csv"))
 total_percent <- read_csv(here("data", "KATMKEFJWPWS_2006-2024_randomPointContactCover_percentCover.csv"))
 invert_count <- read_csv(here("data", "KATMKEFJWPWS_2006-2024_Nucella_Katharina_Lirabuccinum_Count.csv"))
 ```
 
+Note: algae cover is not bounded between 0-100%. Algae coverage was calculated per species such that each species' coverage cannot exceed 100%, but the total coverage of algae on a substrate can total above 100%. We will find the most abundant algae species with the highest occurrence and highest density and examine our relationship with only that species.
+
 ```{r}
+#| code-fold: true
+top_algae_species <- total_percent %>% 
+  group_by(Species) %>% 
+  summarise(n=n(),
+            sum=sum(Percent_Cover)) %>% 
+  arrange(desc(sum))
+top_species <- top_algae_species$Species[1]
+```
+
+Our algae species of interest with the highest density is `r top_species`.
+
+```{r}
+#| code-fold: true
 #| message: false
 
 # add region column to all data
 total_percent <- total_percent %>% 
-  mutate(region = str_sub(SiteID, 1, 3))
-toplayer_percent <- toplayer_percent %>% 
-  mutate(region = str_sub(SiteID, 1, 3))
+  mutate(region = str_sub(SiteID, 1, 3)) %>% 
+  mutate(Year = as.factor(Year)) %>% 
+  filter(Species == "Fucus distichus")
 invert_count <- invert_count %>% 
-  mutate(region = str_sub(SiteID, 1, 3))
+  mutate(region = str_sub(SiteID, 1, 3)) %>% 
+  mutate(Year = as.factor(Year))
 ```
 
 ```{r}
+#| code-fold: true
 #| message: false
 #| warning: false
 
@@ -79,42 +100,53 @@ invert_count <- invert_count %>%
 
 # summarise invertebrate counts
 sum_invert_count <- invert_count %>% 
-  group_by(SampleDate, region, Elevation_Position) %>% 
+  group_by(Year, region, SiteName, Elevation_Position) %>% 
   summarise(invert_count = sum(Density_individual2SqM))
 # summarise algae cover
 sum_percent <- total_percent %>% 
-  group_by(SampleDate, region, Elevation_Position, Quadrat_Num) %>% 
-  summarise(sum = sum(Percent_Cover)) %>% 
-  summarise(total_percent = mean(sum))
+  group_by(Year, region, SiteName, Elevation_Position) %>% 
+  summarise(total_percent = mean(Percent_Cover))
+  
 # join invertebrate and algae count data 
-invert_algae_join <- left_join(sum_invert_count, sum_percent, by = c("SampleDate", "region", "Elevation_Position"))
-rm(sum_invert_count, sum_percent, total_percent, toplayer_percent, invert_count)
+invert_algae_join <- left_join(sum_invert_count, sum_percent, by = c("Year", "region", "Elevation_Position", "SiteName")) %>% 
+  drop_na() # there is one NA to drop
+
+rm(sum_invert_count, sum_percent, total_percent, invert_count)
 ```
 
 We can check if/how zero inflated our data are.
 
 ```{r}
+#| code-fold: true
 # check how many rows are 0
-sum(invert_algae_join$invert_count == 0) / nrow(invert_algae_join)
+zeros <- round(sum(invert_algae_join$invert_count == 0) / nrow(invert_algae_join) * 100)
 ```
 
-The 0s in our data are about 12% of the total data, so we will leave the 0s in our data as is.
+The 0s in our data are about `r zeros`% of the total data, so we will leave the 0s in our data as is.
 
 We can visualize how our predictor and response look, as well as how our response is distributed.
 
 ```{r}
+#| code-fold: true
 #| warning: false
 
 # scatter plot for algae cover and invert count
 ggplot(invert_algae_join, aes(x = total_percent, y = invert_count))+
-  geom_point(aes(color = region), alpha = 0.5) +
+  geom_point(aes(color = Elevation_Position), alpha = 0.5) +
   theme_classic() +
-  labs(title = "Total Percentage of Algae x Total Invertebrate Count",
+  labs(title = "Percentage of Fucus distichus x Total Invertebrate Count",
        x = "% Algae",
        y = "Invertebrate Count") +
-  scale_color_manual(values=c("#1B9E77", "#D95F02", "#7570B3"))
+  scale_color_manual(values=c("#D95F02", "#7570B3"))
+```
 
-# bar plot with total invert counts
+We can see most invertebrate counts fall below a count of 1000, and between fairly well spread though all values of algae cover. We can see a very slight downward trend of invertebrate count as percent algae cover increases.
+
+```{r}
+#| code-fold: true
+#| warning: false
+
+# # bar plot with total invert counts
 ggplot(invert_algae_join, aes(x = invert_count)) +
   geom_bar(width = 50) +
   ylim(0, 20) +
@@ -124,11 +156,30 @@ ggplot(invert_algae_join, aes(x = invert_count)) +
        y = "Frequency")
 ```
 
+As we already know, our data are around `r zeros`% 0s, and we a quick fall-off of count frequency in a typical negative binomial distribution.
+
 # DAG
 
-![](DAG.png)
+```{r}
+#| code-fold: true
+#| message: false
+dag <- dagitty("dag{
+                    year -> date -> invertebrate
+                    elevation -> invertebrate
+                    region -> site -> invertebrate
+                    algae -> invertebrate
+                    elevation -> algae
+                    year -> algae
+                    region -> algae}
+                    ")
+plot(dag)
+```
 
-In this DAG, we have year influencing date, which influences invertebrate counts. Elevation along the intertidal affects invertebrate counts, but nothing else. Region will affect which site we are looking at, which in turn affects how many invertebrates are counted. For this model, we will remove site as a predictor and instead include region to capture the affect. We will use date instead of year, however, as our data are sampled from only June and July, and date will give encompass the granular changes that occur in the intertidal between tidal days.
+In order to assess the potential effects of algae cover on invertebrate counts, we need to specify our assumptions about the system we are working in. There are many environmental conditions at play in the rocky intertidal, so with a directed acyclic graph (DAG) we will map out our assumptions to decide what to include in our model.
+
+In this DAG, we have year influencing date and algae coverage, which influences invertebrate counts. Elevation along the intertidal affects invertebrate counts and algae coverage. Region will affect which site we are looking at and algae coverage, which in turn affects how many invertebrates are counted.
+
+For this model, we will be including algae coverage as our predictor, and adding additional variables of region, year, and elevation. We will use region instead of site as it will likely capture the potential differences in location variation.
 
 # Data and Model Simulation
 
@@ -143,9 +194,9 @@ log(\mu) &= \beta_0 + \beta_1 \text{Predictor}
 \end{align}
 $$
 
-`θ` represents the overdispersion parameter.
+`θ` represents the overdispersion parameter, or how much our data are dispersed from `μ`. This is necessary in a negative binomial regression to allow for our variance to not equal our mean.
 
-`μ` relates to variables `r` (number of successes) and `p` (probability of success) with:
+`μ` represents our mean. It relates to variables `r` (number of successes) and `p` (probability of success) with:
 
 $$
 \begin{align}
@@ -154,6 +205,7 @@ $$
 $$ To better understand our model, we can simulate coefficients and parameters, and run a model to retrieve our coefficients if done correctly.
 
 ```{r}
+#| code-fold: true
 set.seed(42)
 # set coefficients and parameters
 beta0 <- -2
@@ -185,36 +237,42 @@ theta_sim <- simulate_mod$theta
 | beta1       | `r beta1`          | `r beta1_sim`          |
 | theta       | `r theta`          | `r theta_sim`          |
 
+We can see our simulated coefficients are very close to our input coefficients. That means our simulated model is correctly organized and uses the proper parameters, link, and model syntax for a negative binomial. Now, we can run a negative binomial regression with our actual data.
+
 # Negative Binomial Model
 
-In our model, we are including variables of total algae percent (\>100%), date, region, and elevation. We decided to use total algae percent instead of percent cover to capture the multiple layers of algae growth on intertidal habitat. As stated above, we decided to use date as our data were sampled only from June and July, and we can better capture the fluctuation and randomness of invertebrate observations between sampling days. We chose regions instead of sites as it will explain the variation of each site within it.
+In our model, we are including variables of total algae percent, date, region, and elevation. As stated above, we decided to use the percent cover for one species instead of total percent cover as it was \>100%. We decided to use year as our data were sampled only from June and July and we can likely capture annual fluctuations with year. We include region and year as they capture the large-scale differences in location and time. We will also include an interaction term between our algae percent cover and elevation, as we suspect that algae density will vary along elevation of the rocky intertidal.
 
 ```{r}
+#| code-fold: true
 #| message: false
 
-invert_model <- glm.nb(invert_count ~ 
-                         total_percent + 
-                         SampleDate + 
-                         region + 
-                         Elevation_Position, 
-                       data = invert_algae_join, link = log)
-summary(invert_model)$coefficients %>% kable()
+invert_model_region <- glm.nb(invert_count ~
+                                Year +
+                                region +
+                                total_percent * Elevation_Position,
+                              data = invert_algae_join, link = log)
 
-confint(invert_model) %>% kable()
+# summary of algae coverage coefficients
+summary(invert_model_region)$coefficients[2,] %>% kable()
+
+confint(invert_model_region, "total_percent") %>% kable()
 ```
 
-Use predictions to estimate a 95% CI for `μ`
+We will use predictions from our model to estimate a 95% CI for `μ`.
 
 ```{r}
+#| code-fold: true
+#| warning: false
 pred_grid <- expand_grid(
   total_percent = seq(min(invert_algae_join$total_percent),
                       max(invert_algae_join$total_percent),
                       length.out = length(invert_algae_join$total_percent))) %>%
-  mutate(SampleDate = as.Date("2025-06-07"),
+  mutate(Year = as.factor("2024"),
          region = c("KEP"),
          Elevation_Position = "Mid (0.5 m MLLW)")
 
-se <- predict(object = invert_model, 
+se <- predict(object = invert_model_region, 
               newdata = pred_grid, 
               type = "link",
               se.fit = TRUE)
@@ -235,14 +293,18 @@ ggplot(pred_grid, aes(x = total_percent, y = mu)) +
   geom_ribbon(aes(ymin = mu_lwr,
                   ymax = mu_upr), alpha = 0.2, fill = "cornflowerblue") +
   labs(x = "% algae",
-       y = "Predicted Invertebrate Count") +
+       y = "Predicted Invertebrate Count",
+       title = "Prediction line") +
   theme_classic()
 ```
 
 # Conclusion
 
-Based on our model, we did not see a significant affect of algae coverage or elevation on invertebrate density. While we do see a negative trend with increasing algae coverage (H~A),~ our algae coverage coefficient is not significantly different than 0 and with a 95% confidence interval of -0.005 - 0.002, indicating there is a chance the pattern we see in our data could be due to random chance. We did, however, see a significant affect of sample date and region on invertebrate density, both with coefficients significantly different than 0. We can predict what's driving any patterns in invertebrate density is likely not algae coverage, but the day and region. This could be due to a few reasons.
+Based on our model, we did see a significant affect of algae coverage on invertebrate density. We see a negative trend with increasing algae coverage (H~A~), and our algae coverage coefficient is significantly different than 0 (p = 0.00036) and with a 95% confidence interval of [-0.02, -0.009], indicating the pattern we see is likely not due to random chance. We additionally saw a significant affect of region and the algae density + elevation interaction term on invertebrate density, with coefficients significantly different than 0. 
 
-1.  Samples were taken during only June and July, and the algae that was present at these sites during these months may not be what invertebrate species counted utilized for food. This study did not assess species of algae, but that could influence results.
-2.  All species collected are snails, which are quite motile in the intertidal. There is some level of randomness to what snails are present in a quadrat at the time of counting.
-3.  The 3 regions included in this study range the entirety of the southern peninsula of Alaska, and likely both algae species and invertebrate counts vary greatly over that large of an area.
+We can predict what's driving the negative trend in invertebrate density is a combination of the affect of Fucus distichus density and elevation position, likely also affected by region. A few reasons we see this trend and interactions could be as follows:
+
+1. We likely see a significant interaction term because, as we know, by nature the rocky intertidal has high variance in topography and conditions as you move along elevation. This inherently limits what species are fit to survive at each zone, and would highly influence the abundance and diversity of algae. 
+2. A negative trend between algae and invertebrate densities could be due to decreased space availability for invertebrate species to occupy. As algae overtake open substrate, there is less area for invertebrates to, for example, move, hide or find food. 
+
+3.  The 3 regions included in this study range the entirety of the southern peninsula of Alaska, and likely both Fucus distichus density and invertebrate counts vary greatly over that large of an area and between sites. Some regions or sites may have a more favorable assemblage of algae, with dominant species being more favorable at some locations versus others.
