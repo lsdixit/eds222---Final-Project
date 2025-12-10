@@ -72,6 +72,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="Algae_density_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="Algae_density_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="Algae_density_files/libs/bootstrap/bootstrap-9e3ffae467580fdb927a41352e75a2e0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="Algae_density_files/libs/kePrint-0.0.1/kePrint.js"></script>
+
+<link href="Algae_density_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet">
+
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -426,57 +430,59 @@ log(\mu) &amp;= \beta_0 + \beta_1 \text{Predictor}
 <span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>                              <span class="at">data =</span> invert_algae_join, <span class="at">link =</span> log)</span>
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co"># summary of algae coverage coefficients</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(invert_model_region)<span class="sc">$</span>coefficients[<span class="dv">2</span>,] <span class="sc">%&gt;%</span> <span class="fu">kable</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(invert_model_region)<span class="sc">$</span>coefficients[<span class="st">"total_percent"</span>,] <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">format =</span> <span class="st">"html"</span>, <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Coefficient"</span>, <span class="st">"Value"</span>), <span class="at">table.attr =</span> <span class="st">'data-quarto-disable-processing="true"'</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  kableExtra<span class="sc">::</span><span class="fu">kable_styling</span>(<span class="at">bootstrap_options =</span> <span class="fu">c</span>(<span class="st">"basic"</span>, <span class="st">"hover"</span>), <span class="at">full_width =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
-<thead>
-<tr class="header">
-<th style="text-align: left;"></th>
-<th style="text-align: right;">x</th>
-</tr>
-</thead>
+<table data-quarto-disable-processing="true" class="table table-hover" style="width: auto !important; margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:left;"> Coefficient </th>
+   <th style="text-align:right;"> Value </th>
+  </tr>
+ </thead>
 <tbody>
-<tr class="odd">
-<td style="text-align: left;">Estimate</td>
-<td style="text-align: right;">0.4743192</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Std. Error</td>
-<td style="text-align: right;">0.5596784</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">z value</td>
-<td style="text-align: right;">0.8474852</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Pr(&gt;|z|)</td>
-<td style="text-align: right;">0.3967247</td>
-</tr>
+  <tr>
+   <td style="text-align:left;"> Estimate </td>
+   <td style="text-align:right;"> -0.0186668 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Std. Error </td>
+   <td style="text-align:right;"> 0.0052317 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> z value </td>
+   <td style="text-align:right;"> -3.5680387 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Pr(&gt;|z|) </td>
+   <td style="text-align:right;"> 0.0003597 </td>
+  </tr>
 </tbody>
 </table>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confint</span>(invert_model_region, <span class="st">"total_percent"</span>) <span class="sc">%&gt;%</span> <span class="fu">kable</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confint</span>(invert_model_region, <span class="st">"total_percent"</span>) <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">format =</span> <span class="st">"html"</span>, <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Confidence Interval"</span>, <span class="st">"Value"</span>), <span class="at">table.attr =</span> <span class="st">'data-quarto-disable-processing="true"'</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  kableExtra<span class="sc">::</span><span class="fu">kable_styling</span>(<span class="at">bootstrap_options =</span> <span class="fu">c</span>(<span class="st">"basic"</span>, <span class="st">"hover"</span>), <span class="at">full_width =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
-<thead>
-<tr class="header">
-<th style="text-align: left;"></th>
-<th style="text-align: right;">x</th>
-</tr>
-</thead>
+<table data-quarto-disable-processing="true" class="table table-hover" style="width: auto !important; margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:left;"> Confidence Interval </th>
+   <th style="text-align:right;"> Value </th>
+  </tr>
+ </thead>
 <tbody>
-<tr class="odd">
-<td style="text-align: left;">2.5 %</td>
-<td style="text-align: right;">-0.0279666</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">97.5 %</td>
-<td style="text-align: right;">-0.0090969</td>
-</tr>
+  <tr>
+   <td style="text-align:left;"> 2.5 % </td>
+   <td style="text-align:right;"> -0.0279666 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 97.5 % </td>
+   <td style="text-align:right;"> -0.0090969 </td>
+  </tr>
 </tbody>
 </table>
 </div>

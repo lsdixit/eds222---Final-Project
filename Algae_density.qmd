@@ -254,9 +254,12 @@ invert_model_region <- glm.nb(invert_count ~
                               data = invert_algae_join, link = log)
 
 # summary of algae coverage coefficients
-summary(invert_model_region)$coefficients[2,] %>% kable()
+summary(invert_model_region)$coefficients["total_percent",] %>% kable(format = "html", col.names = c("Coefficient", "Value"), table.attr = 'data-quarto-disable-processing="true"') %>% 
+  kableExtra::kable_styling(bootstrap_options = c("basic", "hover"), full_width = FALSE)
 
-confint(invert_model_region, "total_percent") %>% kable()
+confint(invert_model_region, "total_percent") %>% kable(format = "html", col.names = c("Confidence Interval", "Value"), table.attr = 'data-quarto-disable-processing="true"') %>% 
+  kableExtra::kable_styling(bootstrap_options = c("basic", "hover"), full_width = FALSE)
+  
 ```
 
 We will use predictions from our model to estimate a 95% CI for `μ`.
