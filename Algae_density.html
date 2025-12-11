@@ -313,7 +313,7 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>As we already know, our data are around 12% 0s, and we a quick fall-off of count frequency in a typical negative binomial distribution.</p>
+<p>As we already know, our data are around 12% 0s, and we see a quick fall-off of count frequency in a typical negative binomial distribution.</p>
 </section>
 </section>
 <section id="dag" class="level1">
@@ -342,7 +342,7 @@ window.Quarto = {
 </div>
 <p>In order to assess the potential effects of algae cover on invertebrate counts, we need to specify our assumptions about the system we are working in. There are many environmental conditions at play in the rocky intertidal, so with a directed acyclic graph (DAG) we will map out our assumptions to decide what to include in our model.</p>
 <p>In this DAG, we have year influencing date and algae coverage, which influences invertebrate counts. Elevation along the intertidal affects invertebrate counts and algae coverage. Region will affect which site we are looking at and algae coverage, which in turn affects how many invertebrates are counted.</p>
-<p>For this model, we will be including algae coverage as our predictor, and adding additional variables of region, year, and elevation. We will use region instead of site as it will likely capture the potential differences in location variation.</p>
+<p>For this model, we will be including algae coverage as our predictor, and adding additional variables of region, year, and elevation. We will use region instead of site and year instead of date as it will likely capture the potential variation in location and time.</p>
 </section>
 <section id="data-and-model-simulation" class="level1">
 <h1>Data and Model Simulation</h1>
@@ -419,7 +419,7 @@ log(\mu) &amp;= \beta_0 + \beta_1 \text{Predictor}
 </section>
 <section id="negative-binomial-model" class="level1">
 <h1>Negative Binomial Model</h1>
-<p>In our model, we are including variables of total algae percent, date, region, and elevation. As stated above, we decided to use the percent cover for one species instead of total percent cover as it was &gt;100%. We decided to use year as our data were sampled only from June and July and we can likely capture annual fluctuations with year. We include region and year as they capture the large-scale differences in location and time. We will also include an interaction term between our algae percent cover and elevation, as we suspect that algae density will vary along elevation of the rocky intertidal.</p>
+<p>In our model, we are including variables of <em>Fucus distichus</em> percent, date, region, and elevation. As stated above, we decided to use the percent cover for one species instead of total percent cover as it was &gt;100%. We decided to use year as our data were sampled only from June and July and we can likely capture annual fluctuations with year. We include region as it will likely capture the large-scale differences in location. We will also include an interaction term between our algae percent cover and elevation, as we suspect that algae density will vary along elevation of the rocky intertidal.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -430,11 +430,12 @@ log(\mu) &amp;= \beta_0 + \beta_1 \text{Predictor}
 <span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>                              <span class="at">data =</span> invert_algae_join, <span class="at">link =</span> log)</span>
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co"># summary of algae coverage coefficients</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(invert_model_region)<span class="sc">$</span>coefficients[<span class="st">"total_percent"</span>,] <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">format =</span> <span class="st">"html"</span>, <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Coefficient"</span>, <span class="st">"Value"</span>), <span class="at">table.attr =</span> <span class="st">'data-quarto-disable-processing="true"'</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(invert_model_region)<span class="sc">$</span>coefficients[<span class="st">"total_percent"</span>,] <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">"Coefficients for Fucus distichus density"</span>, <span class="at">format =</span> <span class="st">"html"</span>, <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Coefficient"</span>, <span class="st">"Value"</span>), <span class="at">table.attr =</span> <span class="st">'data-quarto-disable-processing="true"'</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  kableExtra<span class="sc">::</span><span class="fu">kable_styling</span>(<span class="at">bootstrap_options =</span> <span class="fu">c</span>(<span class="st">"basic"</span>, <span class="st">"hover"</span>), <span class="at">full_width =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table data-quarto-disable-processing="true" class="table table-hover" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>Coefficients for Fucus distichus density</caption>
  <thead>
   <tr>
    <th style="text-align:left;"> Coefficient </th>
@@ -463,11 +464,73 @@ log(\mu) &amp;= \beta_0 + \beta_1 \text{Predictor}
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confint</span>(invert_model_region, <span class="st">"total_percent"</span>) <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">format =</span> <span class="st">"html"</span>, <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Confidence Interval"</span>, <span class="st">"Value"</span>), <span class="at">table.attr =</span> <span class="st">'data-quarto-disable-processing="true"'</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  kableExtra<span class="sc">::</span><span class="fu">kable_styling</span>(<span class="at">bootstrap_options =</span> <span class="fu">c</span>(<span class="st">"basic"</span>, <span class="st">"hover"</span>), <span class="at">full_width =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(invert_model_region)<span class="sc">$</span>coefficients[<span class="dv">19</span><span class="sc">:</span><span class="dv">23</span>,] <span class="sc">%&gt;%</span> <span class="fu">kable</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 49%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 18%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: right;">Estimate</th>
+<th style="text-align: right;">Std. Error</th>
+<th style="text-align: right;">z value</th>
+<th style="text-align: right;">Pr(&gt;|z|)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">regionKEP</td>
+<td style="text-align: right;">1.0475332</td>
+<td style="text-align: right;">0.1751104</td>
+<td style="text-align: right;">5.9821307</td>
+<td style="text-align: right;">0.0000000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">regionPWS</td>
+<td style="text-align: right;">-1.0201714</td>
+<td style="text-align: right;">0.1702845</td>
+<td style="text-align: right;">-5.9909806</td>
+<td style="text-align: right;">0.0000000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">total_percent</td>
+<td style="text-align: right;">-0.0186668</td>
+<td style="text-align: right;">0.0052317</td>
+<td style="text-align: right;">-3.5680387</td>
+<td style="text-align: right;">0.0003597</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Elevation_PositionUpper (1.5 m MLLW)</td>
+<td style="text-align: right;">-0.0124422</td>
+<td style="text-align: right;">0.2742814</td>
+<td style="text-align: right;">-0.0453631</td>
+<td style="text-align: right;">0.9638179</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">total_percent:Elevation_PositionUpper (1.5 m MLLW)</td>
+<td style="text-align: right;">0.0139257</td>
+<td style="text-align: right;">0.0068062</td>
+<td style="text-align: right;">2.0460293</td>
+<td style="text-align: right;">0.0407535</td>
+</tr>
+</tbody>
+</table>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confint</span>(invert_model_region, <span class="st">"total_percent"</span>) <span class="sc">%&gt;%</span> <span class="fu">kable</span>(<span class="at">format =</span> <span class="st">"html"</span>, <span class="at">caption =</span> <span class="st">"Confidence Intervals for Fucus distichus density"</span>, <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Confidence Interval"</span>, <span class="st">"Value"</span>), <span class="at">table.attr =</span> <span class="st">'data-quarto-disable-processing="true"'</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  kableExtra<span class="sc">::</span><span class="fu">kable_styling</span>(<span class="at">bootstrap_options =</span> <span class="fu">c</span>(<span class="st">"basic"</span>, <span class="st">"hover"</span>), <span class="at">full_width =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table data-quarto-disable-processing="true" class="table table-hover" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>Confidence Intervals for Fucus distichus density</caption>
  <thead>
   <tr>
    <th style="text-align:left;"> Confidence Interval </th>
@@ -491,38 +554,38 @@ log(\mu) &amp;= \beta_0 + \beta_1 \text{Predictor}
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>pred_grid <span class="ot">&lt;-</span> <span class="fu">expand_grid</span>(</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">total_percent =</span> <span class="fu">seq</span>(<span class="fu">min</span>(invert_algae_join<span class="sc">$</span>total_percent),</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">max</span>(invert_algae_join<span class="sc">$</span>total_percent),</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                      <span class="at">length.out =</span> <span class="fu">length</span>(invert_algae_join<span class="sc">$</span>total_percent))) <span class="sc">%&gt;%</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Year =</span> <span class="fu">as.factor</span>(<span class="st">"2024"</span>),</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">region =</span> <span class="fu">c</span>(<span class="st">"KEP"</span>),</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">Elevation_Position =</span> <span class="st">"Mid (0.5 m MLLW)"</span>)</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>se <span class="ot">&lt;-</span> <span class="fu">predict</span>(<span class="at">object =</span> invert_model_region, </span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>              <span class="at">newdata =</span> pred_grid, </span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>              <span class="at">type =</span> <span class="st">"link"</span>,</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>              <span class="at">se.fit =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>pred_grid <span class="ot">&lt;-</span> pred_grid <span class="sc">%&gt;%</span></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_mu =</span> se<span class="sc">$</span>fit,</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_mu_se =</span> se<span class="sc">$</span>se.fit,</span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_mu_lwr =</span> log_mu <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> log_mu_se,</span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_mu_upr =</span> log_mu <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> log_mu_se,</span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu =</span> <span class="fu">exp</span>(log_mu),</span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu_lwr =</span> <span class="fu">exp</span>(log_mu_lwr),</span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu_upr =</span> <span class="fu">exp</span>(log_mu_upr)</span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pred_grid, <span class="fu">aes</span>(<span class="at">x =</span> total_percent, <span class="at">y =</span> mu)) <span class="sc">+</span></span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> mu_lwr,</span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>                  <span class="at">ymax =</span> mu_upr), <span class="at">alpha =</span> <span class="fl">0.2</span>, <span class="at">fill =</span> <span class="st">"cornflowerblue"</span>) <span class="sc">+</span></span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"% algae"</span>,</span>
-<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Predicted Invertebrate Count"</span>,</span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Prediction line"</span>) <span class="sc">+</span></span>
-<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>pred_grid <span class="ot">&lt;-</span> <span class="fu">expand_grid</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">total_percent =</span> <span class="fu">seq</span>(<span class="fu">min</span>(invert_algae_join<span class="sc">$</span>total_percent),</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">max</span>(invert_algae_join<span class="sc">$</span>total_percent),</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                      <span class="at">length.out =</span> <span class="fu">length</span>(invert_algae_join<span class="sc">$</span>total_percent))) <span class="sc">%&gt;%</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Year =</span> <span class="fu">as.factor</span>(<span class="st">"2024"</span>),</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">region =</span> <span class="fu">c</span>(<span class="st">"KEP"</span>),</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">Elevation_Position =</span> <span class="st">"Mid (0.5 m MLLW)"</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>se <span class="ot">&lt;-</span> <span class="fu">predict</span>(<span class="at">object =</span> invert_model_region, </span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>              <span class="at">newdata =</span> pred_grid, </span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>              <span class="at">type =</span> <span class="st">"link"</span>,</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>              <span class="at">se.fit =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>pred_grid <span class="ot">&lt;-</span> pred_grid <span class="sc">%&gt;%</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_mu =</span> se<span class="sc">$</span>fit,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_mu_se =</span> se<span class="sc">$</span>se.fit,</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_mu_lwr =</span> log_mu <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> log_mu_se,</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_mu_upr =</span> log_mu <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> log_mu_se,</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu =</span> <span class="fu">exp</span>(log_mu),</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu_lwr =</span> <span class="fu">exp</span>(log_mu_lwr),</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu_upr =</span> <span class="fu">exp</span>(log_mu_upr)</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pred_grid, <span class="fu">aes</span>(<span class="at">x =</span> total_percent, <span class="at">y =</span> mu)) <span class="sc">+</span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> mu_lwr,</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>                  <span class="at">ymax =</span> mu_upr), <span class="at">alpha =</span> <span class="fl">0.2</span>, <span class="at">fill =</span> <span class="st">"cornflowerblue"</span>) <span class="sc">+</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"% algae"</span>,</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Predicted Invertebrate Count"</span>,</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Prediction line"</span>) <span class="sc">+</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -535,8 +598,8 @@ log(\mu) &amp;= \beta_0 + \beta_1 \text{Predictor}
 </section>
 <section id="conclusion" class="level1">
 <h1>Conclusion</h1>
-<p>Based on our model, we did see a significant affect of algae coverage on invertebrate density. We see a negative trend with increasing algae coverage (H<sub>A</sub>), and our algae coverage coefficient is significantly different than 0 (p = 0.00036) and with a 95% confidence interval of [-0.02, -0.009], indicating the pattern we see is likely not due to random chance. We additionally saw a significant affect of region and the algae density + elevation interaction term on invertebrate density, with coefficients significantly different than 0.</p>
-<p>We can predict what’s driving the negative trend in invertebrate density is a combination of the affect of Fucus distichus density and elevation position, likely also affected by region. A few reasons we see this trend and interactions could be as follows:</p>
+<p>Based on our model, we did see a significant effect of algae coverage on invertebrate density. We see a negative trend with increasing algae coverage (H<sub>A</sub>), and our algae coverage coefficient is significantly different than 0 (p = 0.00036) and with a 95% confidence interval of [-0.02, -0.009], indicating the pattern we see is likely not due to random chance. We additionally saw a significant effect of region and the algae density + elevation interaction term on invertebrate density, with coefficients significantly different than 0.</p>
+<p>We can predict what’s driving the negative trend in invertebrate density is a combination of the affect of Fucus distichus density and elevation position, and likely also affected by region. A few reasons we see this trend and interactions could be as follows:</p>
 <ol type="1">
 <li><p>We likely see a significant interaction term because, as we know, by nature the rocky intertidal has high variance in topography and conditions as you move along elevation. This inherently limits what species are fit to survive at each zone, and would highly influence the abundance and diversity of algae.</p></li>
 <li><p>A negative trend between algae and invertebrate densities could be due to decreased space availability for invertebrate species to occupy. As algae overtake open substrate, there is less area for invertebrates to, for example, move, hide or find food.</p></li>

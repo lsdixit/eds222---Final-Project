@@ -156,7 +156,7 @@ ggplot(invert_algae_join, aes(x = invert_count)) +
        y = "Frequency")
 ```
 
-As we already know, our data are around `r zeros`% 0s, and we a quick fall-off of count frequency in a typical negative binomial distribution.
+As we already know, our data are around `r zeros`% 0s, and we see a quick fall-off of count frequency in a typical negative binomial distribution.
 
 # DAG
 
@@ -179,7 +179,7 @@ In order to assess the potential effects of algae cover on invertebrate counts, 
 
 In this DAG, we have year influencing date and algae coverage, which influences invertebrate counts. Elevation along the intertidal affects invertebrate counts and algae coverage. Region will affect which site we are looking at and algae coverage, which in turn affects how many invertebrates are counted.
 
-For this model, we will be including algae coverage as our predictor, and adding additional variables of region, year, and elevation. We will use region instead of site as it will likely capture the potential differences in location variation.
+For this model, we will be including algae coverage as our predictor, and adding additional variables of region, year, and elevation. We will use region instead of site and year instead of date as it will likely capture the potential variation in location and time.
 
 # Data and Model Simulation
 
@@ -241,7 +241,7 @@ We can see our simulated coefficients are very close to our input coefficients. 
 
 # Negative Binomial Model
 
-In our model, we are including variables of total algae percent, date, region, and elevation. As stated above, we decided to use the percent cover for one species instead of total percent cover as it was \>100%. We decided to use year as our data were sampled only from June and July and we can likely capture annual fluctuations with year. We include region and year as they capture the large-scale differences in location and time. We will also include an interaction term between our algae percent cover and elevation, as we suspect that algae density will vary along elevation of the rocky intertidal.
+In our model, we are including variables of *Fucus distichus* percent, date, region, and elevation. As stated above, we decided to use the percent cover for one species instead of total percent cover as it was \>100%. We decided to use year as our data were sampled only from June and July and we can likely capture annual fluctuations with year. We include region as it will likely capture the large-scale differences in location. We will also include an interaction term between our algae percent cover and elevation, as we suspect that algae density will vary along elevation of the rocky intertidal.
 
 ```{r}
 #| code-fold: true
@@ -254,10 +254,12 @@ invert_model_region <- glm.nb(invert_count ~
                               data = invert_algae_join, link = log)
 
 # summary of algae coverage coefficients
-summary(invert_model_region)$coefficients["total_percent",] %>% kable(format = "html", col.names = c("Coefficient", "Value"), table.attr = 'data-quarto-disable-processing="true"') %>% 
+summary(invert_model_region)$coefficients["total_percent",] %>% kable(caption = "Coefficients for Fucus distichus density", format = "html", col.names = c("Coefficient", "Value"), table.attr = 'data-quarto-disable-processing="true"') %>%
   kableExtra::kable_styling(bootstrap_options = c("basic", "hover"), full_width = FALSE)
 
-confint(invert_model_region, "total_percent") %>% kable(format = "html", col.names = c("Confidence Interval", "Value"), table.attr = 'data-quarto-disable-processing="true"') %>% 
+summary(invert_model_region)$coefficients[19:23,] %>% kable()
+
+confint(invert_model_region, "total_percent") %>% kable(format = "html", caption = "Confidence Intervals for Fucus distichus density", col.names = c("Confidence Interval", "Value"), table.attr = 'data-quarto-disable-processing="true"') %>% 
   kableExtra::kable_styling(bootstrap_options = c("basic", "hover"), full_width = FALSE)
   
 ```
@@ -303,11 +305,12 @@ ggplot(pred_grid, aes(x = total_percent, y = mu)) +
 
 # Conclusion
 
-Based on our model, we did see a significant affect of algae coverage on invertebrate density. We see a negative trend with increasing algae coverage (H~A~), and our algae coverage coefficient is significantly different than 0 (p = 0.00036) and with a 95% confidence interval of [-0.02, -0.009], indicating the pattern we see is likely not due to random chance. We additionally saw a significant affect of region and the algae density + elevation interaction term on invertebrate density, with coefficients significantly different than 0. 
+Based on our model, we did see a significant effect of algae coverage on invertebrate density. We see a negative trend with increasing algae coverage (H~A~), and our algae coverage coefficient is significantly different than 0 (p = 0.00036) and with a 95% confidence interval of \[-0.02, -0.009\], indicating the pattern we see is likely not due to random chance. We additionally saw a significant effect of region and the algae density + elevation interaction term on invertebrate density, with coefficients significantly different than 0.
 
-We can predict what's driving the negative trend in invertebrate density is a combination of the affect of Fucus distichus density and elevation position, likely also affected by region. A few reasons we see this trend and interactions could be as follows:
+We can predict what's driving the negative trend in invertebrate density is a combination of the affect of Fucus distichus density and elevation position, and likely also affected by region. A few reasons we see this trend and interactions could be as follows:
 
-1. We likely see a significant interaction term because, as we know, by nature the rocky intertidal has high variance in topography and conditions as you move along elevation. This inherently limits what species are fit to survive at each zone, and would highly influence the abundance and diversity of algae. 
-2. A negative trend between algae and invertebrate densities could be due to decreased space availability for invertebrate species to occupy. As algae overtake open substrate, there is less area for invertebrates to, for example, move, hide or find food. 
+1.  We likely see a significant interaction term because, as we know, by nature the rocky intertidal has high variance in topography and conditions as you move along elevation. This inherently limits what species are fit to survive at each zone, and would highly influence the abundance and diversity of algae.
+
+2.  A negative trend between algae and invertebrate densities could be due to decreased space availability for invertebrate species to occupy. As algae overtake open substrate, there is less area for invertebrates to, for example, move, hide or find food.
 
 3.  The 3 regions included in this study range the entirety of the southern peninsula of Alaska, and likely both Fucus distichus density and invertebrate counts vary greatly over that large of an area and between sites. Some regions or sites may have a more favorable assemblage of algae, with dominant species being more favorable at some locations versus others.
